@@ -6,7 +6,17 @@ Use this protocol before drafting any report.
 
 Identify:
 
-- Title, authors, venue/year if available.
+- Full title and ordered author list.
+- Verified publication year, or `YEAR-UNK` when it is not reliably available.
+- Document type code and full venue name according to the
+  [output naming contract](output_naming.md).
+- Stable venue abbreviation, or `VENUE-UNK` when it is not reliably available.
+- DOI when present.
+- The first author's affiliation marker or other author-affiliation link.
+- The first author's linked affiliations in the order shown by the paper.
+- The selected first-author primary affiliation, its abbreviation, and the exact
+  `affiliation_evidence` used to select it.
+- The requested report language for `paper_index.json`.
 - Abstract claim.
 - Problem setting.
 - Main contributions as stated by the authors.
@@ -15,6 +25,23 @@ Identify:
 - Figures and tables with captions.
 - Datasets, metrics, baselines, ablations, and implementation details.
 - Limitations, failure cases, and future work.
+
+Resolve the first-author affiliation from the paper's ordered author list and
+author-affiliation markers. If the first author has multiple linked
+affiliations, select the affiliation linked by the first marker printed for
+that author. If the markers do not impose an order, select the first linked
+entry in the paper's printed affiliation list. Record the rest in
+`first_author_other_affiliations`. If the relationship or abbreviation cannot
+be established reliably, use `AFF-UNK` and explain the missing evidence. Never
+substitute a corresponding-author address, and do not create
+corresponding-author affiliation naming fields.
+
+Store `report_language` only in `paper_index.json`; do not copy its language tag
+into the directory, report filename, report metadata table, or batch index.
+
+Run extraction against the workspace's copied `source.pdf`. Record that file's
+SHA-256 in both `sections.json` and `figure_manifest.json`; do not merge an
+extraction artifact whose hash differs from `paper_index.json`.
 
 ## 2. Create Evidence Cards
 

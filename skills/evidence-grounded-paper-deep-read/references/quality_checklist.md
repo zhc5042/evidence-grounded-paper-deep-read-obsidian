@@ -2,6 +2,49 @@
 
 Run this checklist before final delivery.
 
+## Output Package And Naming
+
+- The parent directory is exactly `paper_id`.
+- The report filename is exactly `<paper_id>-deep-read.md`.
+- The base identifier follows
+  `<year>-<type_code>-<venue_abbr>-<first_author_affiliation_abbr>-<short_title>`.
+- The type code is one of `J`, `C`, `TH`, `P`, `TR`, `B`, `BC`, `STD`, or
+  `UNK`.
+- Unknown year, venue, and affiliation values use `YEAR-UNK`, `VENUE-UNK`, and
+  `AFF-UNK`.
+- The first-author affiliation follows the paper's author-affiliation markers;
+  multiple affiliations use the first printed marker, or the first linked
+  affiliation-list entry when the markers do not impose an order.
+- `affiliation_evidence` supports the selected first-author affiliation or
+  explains why `AFF-UNK` was necessary.
+- No author name, corresponding-author affiliation, `FA`, `CA`, or language tag
+  appears in the directory or report filename.
+- The short-title slug does not end in a report-language token such as
+  `zh-CN`.
+- No dedicated corresponding-author affiliation field remains in the naming
+  metadata.
+- `report_language` exists only in `paper_index.json`, not in the report
+  metadata table or batch index.
+- The directory, report filename, and naming fields in `paper_index.json` agree.
+- `sections.json`, `figure_manifest.json`, and `paper_index.json` record the
+  same canonical `source.pdf` SHA-256; neither manifest is missing.
+- Extraction paths stored in `paper_index.json` are portable relative paths,
+  not machine-specific absolute paths.
+- A collision suffix, when present, is `doi-` plus the first eight SHA-256
+  hexadecimal digits of the normalized DOI, or `sha-` plus the first eight
+  hexadecimal digits of the source PDF SHA-256.
+- A DOI added during explicit reuse is stored in the index without renaming an
+  already allocated source-hash workspace; its recorded collision basis
+  remains auditable.
+- No complete source PDF SHA-256 is associated with two different non-empty
+  DOI values.
+- Every figure-manifest item has a safe `figures/...` path, an existing local
+  asset, and a verified asset SHA-256; the path has no Windows-invalid
+  component or alternate-data-stream syntax, and the index contains the same
+  item list.
+- Batch-index report links and report asset links are relative Markdown links
+  that resolve in both Obsidian and GitHub.
+
 ## Required Sections
 
 - Title and metadata are filled.
@@ -11,7 +54,13 @@ Run this checklist before final delivery.
 - The method section explains pipeline, modules, formulas, and implementation.
 - The experiment section explains setup, baselines, metrics, and results.
 - Major visuals are precise crops, not full-page previews.
-- Crop manifests record bbox, margin, and verification status; visuals marked `needs_review` are not used until visually checked or recropped.
+- Every fallback crop is recorded in the canonical
+  `extracted/figure_manifest.json` with bbox, margin, source identity, asset
+  hash, and verification status; visuals marked `needs_review` are not used
+  until visually checked or recropped.
+- Figure extraction and crop publication use the bundled package transaction
+  rather than separate manual replacements of assets and
+  `figure_manifest.json`.
 - Figures and tables are integrated into the task, motivation, method, or experiment sections where they support the argument.
 - Formula section explains important equations and symbols.
 - Inline formulas use `$...$`, display formulas use `$$...$$`, and no `\(...\)` or `\[...\]` math delimiters remain.
