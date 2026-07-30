@@ -4,12 +4,22 @@
 from __future__ import annotations
 
 import argparse
-import json
+import shutil
+import tempfile
 from pathlib import Path
 
-from PIL import Image, ImageChops, ImageStat
+from PIL import Image, ImageStat
 
+from artifact_contract import (
+    load_figure_manifest_for_source,
+    publish_cropped_figure_asset,
+)
 from crop_pdf_region import parse_bbox, require_pdfplumber
+from figure_package import (
+    FigurePackageError,
+    exclusive_figure_package_lock,
+)
+from paper_naming import NamingError, sha256_file
 
 
 def expand_bbox(
@@ -81,46 +91,98 @@ def main() -> int:
     parser.add_argument("--edge-px", type=int, default=10)
     parser.add_argument("--tight-threshold", type=float, default=0.03)
     parser.add_argument("--label", default="")
-    parser.add_argument("--manifest", type=Path, default=None)
+    parser.add_argument("--manifest", type=Path, required=True)
     args = parser.parse_args()
 
     if not args.pdf.exists():
         raise SystemExit(f"PDF not found: {args.pdf}")
+    if not args.pdf.is_file() or args.pdf.suffix.casefold() != ".pdf":
+        raise SystemExit(f"Input must be a PDF file: {args.pdf}")
+    if args.page < 1:
+        raise SystemExit("--page must be 1 or greater")
 
+    args.pdf = args.pdf.resolve()
+    args.out = args.out.resolve()
+    args.manifest = args.manifest.resolve()
+    try:
+        with exclusive_figure_package_lock(args.manifest.parent):
+            load_figure_manifest_for_source(
+                args.manifest,
+                source_pdf=args.pdf,
+            )
+    except (FigurePackageError, NamingError) as exc:
+        raise SystemExit(str(exc)) from exc
+    expected_figures_dir = args.manifest.parent / "figures"
+    try:
+        relative_output = args.out.relative_to(args.manifest.parent)
+        args.out.relative_to(expected_figures_dir)
+    except ValueError as exc:
+        raise SystemExit(
+            "--out must stay under the manifest's extracted/figures "
+            "directory"
+        ) from exc
+
+    source_sha256 = sha256_file(args.pdf)
     width, height = page_size(args.pdf, args.page)
     expanded = expand_bbox(args.bbox, args.margin, width, height)
-    crop_page(args.pdf, args.page, expanded, args.out, args.dpi)
+    staging = Path(
+        tempfile.mkdtemp(
+            prefix=".figure-stage-",
+            dir=args.manifest.parent,
+        )
+    )
+    staged_output = staging / relative_output
+    staged_output.parent.mkdir(parents=True)
+    preserve_staging = False
+    try:
+        crop_page(
+            args.pdf,
+            args.page,
+            expanded,
+            staged_output,
+            args.dpi,
+        )
+        if sha256_file(args.pdf) != source_sha256:
+            raise RuntimeError(
+                "The source PDF changed during cropping; existing assets "
+                "were left untouched"
+            )
+        edges = edge_dark_fraction(staged_output, edge_px=args.edge_px)
+        status, warnings = quality_status(edges, args.tight_threshold)
+        record = {
+            "kind": "verified_crop",
+            "label": args.label,
+            "page": args.page,
+            "original_bbox": list(args.bbox),
+            "expanded_bbox": list(expanded),
+            "margin": args.margin,
+            "dpi": args.dpi,
+            "verification": {
+                "status": status,
+                "edge_dark_fraction": edges,
+                "warnings": warnings,
+                "note": (
+                    "Edge check detects likely tight crops; visual review "
+                    "is still required."
+                ),
+            },
+        }
 
-    edges = edge_dark_fraction(args.out, edge_px=args.edge_px)
-    status, warnings = quality_status(edges, args.tight_threshold)
-    record = {
-        "kind": "verified_crop",
-        "label": args.label,
-        "page": args.page,
-        "original_bbox": list(args.bbox),
-        "expanded_bbox": list(expanded),
-        "margin": args.margin,
-        "path": str(args.out),
-        "dpi": args.dpi,
-        "verification": {
-            "status": status,
-            "edge_dark_fraction": edges,
-            "warnings": warnings,
-            "note": "Edge check detects likely tight crops; visual review is still required.",
-        },
-    }
-
-    if args.manifest:
-        manifest = []
-        if args.manifest.exists():
-            try:
-                existing = json.loads(args.manifest.read_text(encoding="utf-8"))
-                manifest = existing if isinstance(existing, list) else existing.get("items", [])
-            except json.JSONDecodeError:
-                manifest = []
-        manifest.append(record)
-        args.manifest.parent.mkdir(parents=True, exist_ok=True)
-        args.manifest.write_text(json.dumps(manifest, ensure_ascii=False, indent=2), encoding="utf-8")
+        publish_cropped_figure_asset(
+            args.manifest,
+            source_pdf=args.pdf,
+            staging=staging,
+            asset_path=args.out,
+            record=record,
+        )
+    except FigurePackageError as exc:
+        preserve_staging = exc.preserve_staging
+        raise SystemExit(str(exc)) from exc
+    except (NamingError, RuntimeError) as exc:
+        raise SystemExit(str(exc)) from exc
+    finally:
+        if not preserve_staging:
+            shutil.rmtree(staging, ignore_errors=True)
 
     print(f"Wrote {args.out}")
     print(f"Status: {status}")

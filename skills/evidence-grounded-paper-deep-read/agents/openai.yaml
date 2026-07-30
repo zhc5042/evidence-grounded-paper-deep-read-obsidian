@@ -1,7 +1,7 @@
 interface:
   display_name: "Evidence-Grounded Paper Deep Read"
-  short_description: "Deep, evidence-grounded reports from paper PDFs."
-  default_prompt: "Use $evidence-grounded-paper-deep-read to create a detailed Chinese paper deep-reading report from this PDF, covering what the authors did, why they did it, how they did it, and how they validated it."
+  short_description: "Obsidian-ready, canonically named paper deep reads."
+  default_prompt: "Use $evidence-grounded-paper-deep-read to create a detailed Chinese, evidence-grounded report from this PDF and save it as a canonically named Obsidian-ready paper package."
 
 policy:
   allow_implicit_invocation: true

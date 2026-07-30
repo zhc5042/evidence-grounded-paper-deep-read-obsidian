@@ -11,12 +11,17 @@ Use this schema for the final Markdown report. Keep the user's requested languag
 
 | 项目 | 内容 |
 |---|---|
+| 论文标识 |  |
 | 标题 |  |
 | 作者 |  |
-| 发表信息 |  |
+| 发表年份 |  |
+| 文献类型 |  |
+| 来源 | 完整名称（规范缩写） |
+| 第一作者主要单位 | 完整名称（规范缩写） |
+| 单位关联证据 |  |
+| 报告文件 |  |
 | PDF 文件 |  |
 | 主题 |  |
-| 报告语言 |  |
 
 ## 2. 作者做了什么
 ### 2.1 核心任务
@@ -60,6 +65,11 @@ Use this schema for the final Markdown report. Keep the user's requested languag
 
 ## 11. 完整性自检
 ```
+
+Use the canonical `paper_id`, report filename, document type code, venue
+abbreviation, and first-author affiliation selected under the
+[output naming contract](output_naming.md). Do not add a report-language
+metadata row: `report_language` belongs only in `paper_index.json`.
 
 ## Detail Requirements
 

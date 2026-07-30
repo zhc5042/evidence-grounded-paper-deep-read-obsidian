@@ -8,12 +8,17 @@ TODO
 
 | 项目 | 内容 |
 |---|---|
+| 论文标识 | {{PAPER_ID}} |
 | 标题 | {{TITLE}} |
 | 作者 | TODO |
-| 发表信息 | TODO |
+| 发表年份 | {{PUBLICATION_YEAR}} |
+| 文献类型 | {{DOCUMENT_TYPE_CODE}} |
+| 来源 | {{VENUE_FULL}}（{{VENUE_ABBR}}） |
+| 第一作者主要单位 | {{FIRST_AUTHOR_AFFILIATION_FULL}}（{{FIRST_AUTHOR_AFFILIATION_ABBR}}） |
+| 单位关联证据 | {{AFFILIATION_EVIDENCE}} |
+| 报告文件 | {{REPORT_FILENAME}} |
 | PDF 文件 | {{PDF_FILE}} |
 | 主题 | TODO |
-| 报告语言 | {{LANGUAGE}} |
 
 ## 2. 作者做了什么
 

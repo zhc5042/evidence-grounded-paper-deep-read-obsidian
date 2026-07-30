@@ -12,6 +12,8 @@ import re
 import sys
 from pathlib import Path
 
+from paper_naming import sha256_file
+
 
 def load_backend():
     try:
@@ -50,7 +52,11 @@ def main() -> int:
 
     if not args.pdf.exists():
         raise SystemExit(f"PDF not found: {args.pdf}")
+    if not args.pdf.is_file() or args.pdf.suffix.casefold() != ".pdf":
+        raise SystemExit(f"Input must be a PDF file: {args.pdf}")
 
+    args.pdf = args.pdf.resolve()
+    source_sha256 = sha256_file(args.pdf)
     backend_name, backend = load_backend()
     args.out.mkdir(parents=True, exist_ok=True)
 
@@ -80,14 +86,30 @@ def main() -> int:
             paragraph_id += 1
         pages.append({"page": page_index, "paragraphs": paragraphs})
 
-    (args.out / "full_text.md").write_text("\n".join(md_lines), encoding="utf-8")
+    if sha256_file(args.pdf) != source_sha256:
+        raise SystemExit(
+            "The source PDF changed during text extraction; discard the "
+            "partial extraction and retry"
+        )
+    (args.out / "full_text.md").write_text(
+        "\n".join(md_lines),
+        encoding="utf-8",
+        newline="\n",
+    )
     (args.out / "sections.json").write_text(
         json.dumps(
-            {"pdf": str(args.pdf), "backend": backend_name, "pages": pages},
+            {
+                "source_pdf": args.pdf.name,
+                "source_sha256": source_sha256,
+                "backend": backend_name,
+                "pages": pages,
+            },
             ensure_ascii=False,
             indent=2,
-        ),
+        )
+        + "\n",
         encoding="utf-8",
+        newline="\n",
     )
 
     print(f"Backend: {backend_name}")

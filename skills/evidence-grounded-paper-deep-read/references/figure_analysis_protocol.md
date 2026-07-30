@@ -31,8 +31,23 @@ Recommended workflow:
 
 1. Render or inspect the page containing the visual.
 2. Determine the bounding box around the figure/table, including all subpanels, legends, axes, labels, and internal annotations, while excluding unrelated page text when possible.
-3. Run `scripts/crop_pdf_region_verified.py` with the page number, bbox, and a margin.
-4. Inspect the generated manifest. If `verification.status` is `needs_review`, enlarge or shift the bbox and crop again.
+3. Run `scripts/crop_pdf_region_verified.py` with the page number, bbox, margin,
+   output path below `extracted/figures/`, and
+   `--manifest extracted/figure_manifest.json`. For example:
+
+   ```bash
+   python scripts/crop_pdf_region_verified.py source.pdf \
+     --page 4 \
+     --bbox 72,120,525,650 \
+     --margin 12 \
+     --out extracted/figures/figure-002-method.png \
+     --manifest extracted/figure_manifest.json \
+     --label "Figure 2: method"
+   ```
+
+4. Inspect the updated canonical manifest item. If
+   `verification.status` is `needs_review`, enlarge or shift the bbox and crop
+   again.
 5. Reference only the verified cropped image in the report using a relative path.
 6. If exact cropping is impossible, mark the visual as unavailable or unresolved; do not present a full-page preview as if it were the figure.
 
@@ -98,7 +113,9 @@ If an embedded figure cannot be extracted:
 
 - Render the page as a page preview image.
 - Use the page preview only to choose a crop region.
-- Crop the visual with `scripts/crop_pdf_region.py`.
+- Crop the visual with `scripts/crop_pdf_region.py`, placing the output below
+  `extracted/figures/` and passing
+  `--manifest extracted/figure_manifest.json`.
 - If cropping still fails, mark the figure as `unresolved extraction limitation`.
 - Explain any visibility limitations.
 
